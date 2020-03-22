@@ -5,34 +5,37 @@ import numpy as np
 from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint
-from utils import BATCH_SIZE, IMG_SIZE
+from functools import reduce
 
-entry = keras.layers.Input((*IMG_SIZE, 3))
+IMG_SIZE = (32, 32)
+BATCH_SIZE = 32
+HIDDEN_SIZE = 256
+BOTTLE_SIZE = 128
+INPUT_SIZE = reduce(lambda x, y: x*y, [*IMG_SIZE,3])
+
+entry = keras.layers.Input((*IMG_SIZE,3))
+flatten = keras.layers.Flatten()(entry)
 
 # encoder
-encoder = keras.layers.Conv2D(
-    32, (3, 3), activation='relu', padding='same')(entry)
-encoder = keras.layers.AveragePooling2D(padding='same')(encoder)
-encoder = keras.layers.Conv2D(
-    32, (3, 3), activation='relu', padding='same')(encoder)
-encoder = keras.layers.AveragePooling2D(padding='same')(encoder)
-encoder = keras.layers.Conv2D(
-    32, (3, 3), activation='relu', padding='same')(encoder)
-encoder = keras.layers.AveragePooling2D(padding='same')(encoder)
+encoder = keras.layers.Dense(
+    HIDDEN_SIZE*3, activation='relu')(flatten)
+encoder = keras.layers.Dense(
+    HIDDEN_SIZE*2, activation='relu')(encoder)
+encoder = keras.layers.Dense(
+    HIDDEN_SIZE, activation='relu')(encoder)
 
 # bottleneck
-bottleneck = keras.layers.Conv2D(
-    32, (3, 3), activation='relu', padding='same', name='bottleneck')(encoder)
+bottleneck =keras.layers.Dense(
+    BOTTLE_SIZE, activation='relu', name='bottleneck')(encoder)
 
 # decoder
-decoder = keras.layers.UpSampling2D()(bottleneck)
-decoder = keras.layers.Conv2D(
-    32, (3, 3), activation='relu', padding='same')(decoder)
-decoder = keras.layers.UpSampling2D()(decoder)
-decoder = keras.layers.Conv2D(
-    32, (3, 3), activation='relu', padding='same')(decoder)
-decoder = keras.layers.UpSampling2D()(decoder)
-decoder = keras.layers.Conv2D(3, (3, 3), activation='sigmoid', padding='same')(decoder)
+decoder = keras.layers.Dense(
+    HIDDEN_SIZE*2, activation='relu')(bottleneck)
+decoder = keras.layers.Dense(
+    HIDDEN_SIZE*3, activation='relu')(decoder)
+decoder = keras.layers.Dense(
+    INPUT_SIZE, activation='sigmoid')(decoder)
+decoder = keras.layers.Reshape((*IMG_SIZE, 3))(decoder)
 
 model = keras.models.Model(entry, decoder)
 model.compile(optimizer='adam', loss='binary_crossentropy')
@@ -45,6 +48,7 @@ train = data.flow_from_directory('../dataset', target_size=IMG_SIZE,
 valid = data.flow_from_directory('../dataset', target_size=IMG_SIZE,
                                  class_mode='input', batch_size=BATCH_SIZE, subset='validation')
 
-model.fit_generator(train, steps_per_epoch=1, epochs=1,
-                    callbacks=[ModelCheckpoint('./checkpoints/ae-model-{epoch:02d}.hdf5', verbose=1)], validation_data=valid, validation_steps=1)
+
+model.fit_generator(train, steps_per_epoch=train.n//train.batch_size, epochs=1,
+                    callbacks=[ModelCheckpoint('./checkpoints/dae-model-{epoch:02d}.hdf5', verbose=1)], validation_data=valid, validation_steps=valid.n//valid.batch_size)
 

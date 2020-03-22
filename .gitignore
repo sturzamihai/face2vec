@@ -1,3 +1,4 @@
 env/ml
 dataset
+__pycache__
 .vscode
