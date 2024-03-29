@@ -13,6 +13,7 @@ import os
 from models.MTCNN import PNet, RNet, ONet
 from models.MTCNN.utils import detect_face, extract_face, fixed_image_standardization
 
+
 class MTCNN(nn.Module):
     """MTCNN face detection module.
 
@@ -33,7 +34,7 @@ class MTCNN(nn.Module):
         min_face_size {int} -- Minimum face size to search for. (default: {20})
         thresholds {list} -- MTCNN face detection thresholds (default: {[0.6, 0.7, 0.7]})
         factor {float} -- Factor used to create a scaling pyramid of face sizes. (default: {0.709})
-        post_process {bool} -- Whether or not to post process images tensors before returning.
+        post_process {bool} -- Whether to post process images tensors before returning.
             (default: {True})
         select_largest {bool} -- If True, if multiple faces are detected, the largest is returned.
             If False, the face with the highest detection probability is returned.
@@ -54,9 +55,9 @@ class MTCNN(nn.Module):
     """
 
     def __init__(
-        self, image_size=160, margin=0, min_face_size=20,
-        thresholds=[0.6, 0.7, 0.7], factor=0.709, post_process=True,
-        select_largest=True, selection_method=None, keep_all=False, device=None
+            self, image_size=160, margin=0, min_face_size=20,
+            thresholds=[0.6, 0.7, 0.7], factor=0.709, post_process=True,
+            select_largest=True, selection_method=None, keep_all=False, device=None
     ):
         super().__init__()
 
@@ -108,7 +109,7 @@ class MTCNN(nn.Module):
                 dimension (batch) as the first dimension.
 
         Example:
-        >>> from facenet_pytorch import MTCNN
+        >>> from models.MTCNN import MTCNN
         >>> mtcnn = MTCNN()
         >>> face_tensor, prob = mtcnn(img, save_path='face.png', return_prob=True)
         """
@@ -154,7 +155,7 @@ class MTCNN(nn.Module):
 
         Example:
         >>> from PIL import Image, ImageDraw
-        >>> from facenet_pytorch import MTCNN, extract_face
+        >>> from models.MTCNN import MTCNN
         >>> mtcnn = MTCNN(keep_all=True)
         >>> boxes, probs, points = mtcnn.detect(img, landmarks=True)
         >>> # Draw boxes and save faces
@@ -200,9 +201,9 @@ class MTCNN(nn.Module):
         points = np.array(points, dtype=object)
 
         if (
-            not isinstance(img, (list, tuple)) and 
-            not (isinstance(img, np.ndarray) and len(img.shape) == 4) and
-            not (isinstance(img, torch.Tensor) and len(img.shape) == 4)
+                not isinstance(img, (list, tuple)) and
+                not (isinstance(img, np.ndarray) and len(img.shape) == 4) and
+                not (isinstance(img, torch.Tensor) and len(img.shape) == 4)
         ):
             boxes = boxes[0]
             probs = probs[0]
@@ -214,8 +215,8 @@ class MTCNN(nn.Module):
         return boxes, probs
 
     def select_boxes(
-        self, all_boxes, all_probs, all_points, imgs, method='probability', threshold=0.9,
-        center_weight=2.0
+            self, all_boxes, all_probs, all_points, imgs, method='probability', threshold=0.9,
+            center_weight=2.0
     ):
         """Selects a single box from multiple for a given image using one of multiple heuristics.
 
@@ -244,7 +245,7 @@ class MTCNN(nn.Module):
                     for n images. Ix0 array of probabilities for each box, array of landmark points.
         """
 
-        #copying batch detection from extract, but would be easier to ensure detect creates consistent output.
+        # copying batch detection from extract, but would be easier to ensure detect creates consistent output.
         batch_mode = True
         if (
                 not isinstance(imgs, (list, tuple)) and
@@ -259,25 +260,25 @@ class MTCNN(nn.Module):
 
         selected_boxes, selected_probs, selected_points = [], [], []
         for boxes, points, probs, img in zip(all_boxes, all_points, all_probs, imgs):
-            
+
             if boxes is None:
                 selected_boxes.append(None)
                 selected_probs.append([None])
                 selected_points.append(None)
                 continue
-            
+
             # If at least 1 box found
             boxes = np.array(boxes)
             probs = np.array(probs)
             points = np.array(points)
-                
+
             if method == 'largest':
                 box_order = np.argsort((boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1]))[::-1]
             elif method == 'probability':
                 box_order = np.argsort(probs)[::-1]
             elif method == 'center_weighted_size':
                 box_sizes = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-                img_center = (img.width / 2, img.height/2)
+                img_center = (img.width / 2, img.height / 2)
                 box_centers = np.array(list(zip((boxes[:, 0] + boxes[:, 2]) / 2, (boxes[:, 1] + boxes[:, 3]) / 2)))
                 offsets = box_centers - img_center
                 offset_dist_squared = np.sum(np.power(offsets, 2.0), 1)
