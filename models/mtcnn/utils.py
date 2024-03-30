@@ -42,6 +42,7 @@ def detect_face(imgs, minsize, pnet, rnet, onet, threshold, factor, device):
         imgs = torch.as_tensor(imgs.copy(), device=device)
 
     model_dtype = next(pnet.parameters()).dtype
+
     imgs = imgs.permute(0, 3, 1, 2).type(model_dtype)
 
     batch_size = len(imgs)
@@ -212,6 +213,7 @@ def generateBoundingBox(reg, probs, scale, thresh):
     q1 = ((stride * bb + 1) / scale).floor()
     q2 = ((stride * bb + cellsize - 1 + 1) / scale).floor()
     boundingbox = torch.cat([q1, q2, score.unsqueeze(1), reg], dim=1)
+
     return boundingbox, image_inds
 
 
