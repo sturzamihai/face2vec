@@ -1,5 +1,5 @@
 """
-Code for MTCNN model taken from 
+Code for MTCNN model taken from
 [facenet-pytorch](https://github.com/timesler/facenet-pytorch/blob/master/models/mtcnn.py)
 
 All credit goes to the original authors.
@@ -10,12 +10,12 @@ from torch import nn
 import numpy as np
 import os
 
-from models.MTCNN import PNet, RNet, ONet
-from models.MTCNN.utils import detect_face, extract_face, fixed_image_standardization
+from models.mtcnn import PNet, RNet, ONet
+from models.mtcnn.utils import detect_face, extract_face, fixed_image_standardization
 
 
 class MTCNN(nn.Module):
-    """MTCNN face detection module.
+    """mtcnn face detection module.
 
     This class loads pretrained P-, R-, and O-nets and returns images cropped to include the face
     only, given raw input images of one of the following types:
@@ -32,7 +32,7 @@ class MTCNN(nn.Module):
             dependent on the original image size (this is a bug in davidsandberg/facenet).
             (default: {0})
         min_face_size {int} -- Minimum face size to search for. (default: {20})
-        thresholds {list} -- MTCNN face detection thresholds (default: {[0.6, 0.7, 0.7]})
+        thresholds {list} -- mtcnn face detection thresholds (default: {[0.6, 0.7, 0.7]})
         factor {float} -- Factor used to create a scaling pyramid of face sizes. (default: {0.709})
         post_process {bool} -- Whether to post process images tensors before returning.
             (default: {True})
@@ -56,10 +56,13 @@ class MTCNN(nn.Module):
 
     def __init__(
             self, image_size=160, margin=0, min_face_size=20,
-            thresholds=[0.6, 0.7, 0.7], factor=0.709, post_process=True,
+            thresholds=None, factor=0.709, post_process=True,
             select_largest=True, selection_method=None, keep_all=False, device=None
     ):
         super().__init__()
+
+        if thresholds is None:
+            thresholds = [0.6, 0.7, 0.7]
 
         self.image_size = image_size
         self.margin = margin
@@ -84,9 +87,9 @@ class MTCNN(nn.Module):
             self.selection_method = 'largest' if self.select_largest else 'probability'
 
     def forward(self, img, save_path=None, return_prob=False):
-        """Run MTCNN face detection on a PIL image or numpy array. This method performs both
+        """Run mtcnn face detection on a PIL image or numpy array. This method performs both
         detection and extraction of faces, returning tensors representing detected faces rather
-        than the bounding boxes. To access bounding boxes, see the MTCNN.detect() method below.
+        than the bounding boxes. To access bounding boxes, see the mtcnn.detect() method below.
         
         Arguments:
             img {PIL.Image, np.ndarray, or list} -- A PIL image, np.ndarray, torch.Tensor, or list.
@@ -109,8 +112,8 @@ class MTCNN(nn.Module):
                 dimension (batch) as the first dimension.
 
         Example:
-        >>> from models.MTCNN import MTCNN
-        >>> mtcnn = MTCNN()
+        >>> from models.mtcnn import mtcnn
+        >>> mtcnn = mtcnn()
         >>> face_tensor, prob = mtcnn(img, save_path='face.png', return_prob=True)
         """
 
@@ -155,8 +158,8 @@ class MTCNN(nn.Module):
 
         Example:
         >>> from PIL import Image, ImageDraw
-        >>> from models.MTCNN import MTCNN
-        >>> mtcnn = MTCNN(keep_all=True)
+        >>> from models.mtcnn import mtcnn
+        >>> mtcnn = mtcnn(keep_all=True)
         >>> boxes, probs, points = mtcnn.detect(img, landmarks=True)
         >>> # Draw boxes and save faces
         >>> img_draw = img.copy()

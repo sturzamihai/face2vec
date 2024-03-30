@@ -1,5 +1,5 @@
 """
-Code for MTCNN model taken from 
+Code for mtcnn model taken from
 [facenet-pytorch](https://github.com/timesler/facenet-pytorch/blob/master/models/mtcnn.py)
 
 All credit goes to the original authors.
@@ -11,7 +11,7 @@ import os
 
 
 class RNet(nn.Module):
-    """MTCNN RNet.
+    """mtcnn RNet.
     
     Keyword Arguments:
         pretrained {bool} -- Whether or not to load saved pretrained weights (default: {True})

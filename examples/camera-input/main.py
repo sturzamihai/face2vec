@@ -1,5 +1,5 @@
 import cv2
-from models.MTCNN import MTCNN
+from models.mtcnn import MTCNN
 
 video_input = cv2.VideoCapture(0)
 model = MTCNN()
