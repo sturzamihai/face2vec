@@ -9,7 +9,11 @@ from models.mtcnn import MTCNN
 EPOCHS = 10
 BATCH_SIZE = 32
 
-train_dataset = CelebA('./data', split='train', download=False)
+transform = transforms.Compose([
+    transforms.ToTensor(),
+])
+
+train_dataset = CelebA('./data', split='train', transform=transform, download=False)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
