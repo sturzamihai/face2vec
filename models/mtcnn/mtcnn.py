@@ -100,7 +100,7 @@ class MTCNN(nn.Module):
                 face image is not, so it is a true representation of the face in the input image.
                 If `img` is a list of images, `save_path` should be a list of equal length.
                 (default: {None})
-            return_prob {bool} -- Whether or not to return the detection probability.
+            return_prob {bool} -- Whether to return the detection probability.
                 (default: {False})
         
         Returns:
