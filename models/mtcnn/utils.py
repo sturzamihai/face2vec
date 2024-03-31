@@ -42,8 +42,10 @@ def detect_face(imgs, minsize, pnet, rnet, onet, threshold, factor, device):
         imgs = torch.as_tensor(imgs.copy(), device=device)
 
     model_dtype = next(pnet.parameters()).dtype
+    imgs = imgs.type(model_dtype)
 
-    imgs = imgs.permute(0, 3, 1, 2).type(model_dtype)
+    if imgs.shape[1] != 3:
+        imgs = imgs.permute(0, 3, 1, 2)
 
     batch_size = len(imgs)
     h, w = imgs.shape[2:4]
@@ -314,18 +316,16 @@ def crop_resize(img, box, image_size):
             interpolation=cv2.INTER_AREA
         ).copy()
     elif isinstance(img, torch.Tensor):
-        img = img[box[1]:box[3], box[0]:box[2]]
-        out = imresample(
-            img.permute(2, 0, 1).unsqueeze(0).float(),
-            (image_size, image_size)
-        ).byte().squeeze(0).permute(1, 2, 0)
+        img = F.crop(img, box[1], box[0], box[3] - box[1], box[2] - box[0])
+        out = F.resize(img, (image_size, image_size)).permute(1,2,0)
     else:
         out = img.crop(box).copy().resize((image_size, image_size), Image.BILINEAR)
     return out
 
 
 def save_img(img, path):
-    if isinstance(img, np.ndarray):
+    if isinstance(img, (np.ndarray, torch.Tensor)):
+        img = img if isinstance(img, np.ndarray) else img.numpy()
         cv2.imwrite(path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
     else:
         img.save(path)
@@ -333,7 +333,7 @@ def save_img(img, path):
 
 def get_size(img):
     if isinstance(img, (np.ndarray, torch.Tensor)):
-        return img.shape[1::-1]
+        return img.shape[1:]
     else:
         return img.size
 
@@ -352,7 +352,7 @@ def extract_face(img, box, image_size=160, margin=0, save_path=None):
         save_path {str} -- Save path for extracted face image. (default: {None})
     
     Returns:
-        torch.tensor -- tensor representing the extracted face.
+        torch.Tensor -- tensor representing the extracted face.
     """
     margin = [
         margin * (box[2] - box[0]) / (image_size - margin),

@@ -362,7 +362,6 @@ class MTCNN(nn.Module):
 
             faces.append(faces_im)
 
-        if not batch_mode:
-            faces = faces[0]
+        faces = faces[0] if not batch_mode else torch.stack(faces)
 
         return faces

@@ -10,11 +10,14 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = MTCNN(device=device)
 
 target_image = Image.open(os.path.join(os.path.dirname(__file__), 'target.jpg'))
-target_image = transforms.ToTensor()(target_image).to(device)
+tensor_image = transforms.PILToTensor()(target_image).to(device)
 
-faces = model(target_image)
 
-print(faces)
+pil_faces = model(target_image, save_path=os.path.join(os.path.dirname(__file__), 'pil_face.png'))
+tensor_faces = model(tensor_image, save_path=os.path.join(os.path.dirname(__file__), 'tensor_face.png'))
+
+print("PIL:", pil_faces)
+print("Tensor:", tensor_faces)
 
 # plt.figure(figsize=(10, 5))
 # plt.subplot(1, 2, 1)

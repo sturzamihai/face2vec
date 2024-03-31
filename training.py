@@ -10,6 +10,7 @@ EPOCHS = 10
 BATCH_SIZE = 32
 
 transform = transforms.Compose([
+    transforms.Resize((128, 128)),
     transforms.PILToTensor()
 ])
 
@@ -20,7 +21,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = VariationalAutoEncoder(pretrained=False).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-mtcnn = MTCNN(device=device)
+mtcnn = MTCNN(image_size=128, device=device)
 
 for epoch in range(EPOCHS):
     train_loss = 0
@@ -34,21 +35,15 @@ for epoch in range(EPOCHS):
 
         optimizer.zero_grad()
 
-        batch_loss = 0
-        for face in faces:
-            print(face.shape)
-            face = face.unsqueeze(0)
-            x, x_hat, mu, log_var = model(face)
-            loss, recon_loss, kld_loss = model.loss(x, x_hat, mu, log_var)
-            loss.backward()
+        x, x_hat, mu, log_var = model(faces)
+        loss, recon_loss, kld_loss = model.loss(x, x_hat, mu, log_var)
+        loss.backward()
 
-            batch_loss += loss.item()
-            optimizer.step()
-
-        train_loss += batch_loss / len(faces)
+        train_loss += loss.item()
+        optimizer.step()
 
         if batch_number % 100 == 0:
-            print(f'\tBatch {batch_number}/{len(train_loader)}, Loss: {batch_loss / len(faces):.4f}')
+            print(f'\tBatch {batch_number}/{len(train_loader)}, Loss: {loss.item():.4f}')
 
     print('-' * 60)
     print(f'\tEpoch {epoch + 1}/{EPOCHS}, Loss: {train_loss / len(train_loader):.4f}')

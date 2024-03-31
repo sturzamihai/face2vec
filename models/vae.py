@@ -7,7 +7,7 @@ from torch import Tensor
 
 
 class VariationalAutoEncoder(nn.Module):
-    def __init__(self, input_channels: int = 3, embedding_dim: int = 512, pretrained: bool = True):
+    def __init__(self, input_channels: int = 3, embedding_dim: int = 128, pretrained: bool = True):
         super().__init__()
 
         self.embedding_dim = embedding_dim
