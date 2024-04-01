@@ -13,7 +13,7 @@ target_image = Image.open(os.path.join(os.path.dirname(__file__), 'target.jpg'))
 tensor_image = transforms.PILToTensor()(target_image).to(device)
 
 
-pil_faces = model(target_image, save_path=os.path.join(os.path.dirname(__file__), 'pil_face.png'))
+pil_faces = model([target_image, target_image], save_path=os.path.join(os.path.dirname(__file__), 'pil_face.png'))
 tensor_faces = model(tensor_image, save_path=os.path.join(os.path.dirname(__file__), 'tensor_face.png'))
 
 print("PIL:", pil_faces)

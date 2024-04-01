@@ -10,7 +10,7 @@ EPOCHS = 10
 BATCH_SIZE = 32
 
 transform = transforms.Compose([
-    transforms.Resize((128, 128)),
+    transforms.Resize((256, 256)),
     transforms.PILToTensor()
 ])
 
