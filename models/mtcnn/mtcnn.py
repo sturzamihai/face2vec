@@ -90,6 +90,26 @@ class MTCNN(nn.Module):
         if not self.selection_method:
             self.selection_method = 'largest' if self.select_largest else 'probability'
 
+    def _convert_img(self, img: Union[Image, List[Image], torch.Tensor, np.ndarray]):
+        if isinstance(img, Image.Image):
+            img = transforms.PILToTensor()(img).unsqueeze(0).to(self.device)
+        elif isinstance(img, list):
+            img = torch.stack([transforms.PILToTensor()(i) for i in img]).to(self.device)
+        elif isinstance(img, np.ndarray):
+            if len(img.shape) <= 2:
+                raise ValueError("Image must have 3 color channels")
+            elif len(img.shape) == 3:
+                img = torch.tensor(img).permute(2, 0, 1).unsqueeze(0).to(self.device)
+            elif len(img.shape) == 4:
+                img = torch.tensor(img).permute(0, 3, 1, 2).to(self.device)
+        elif isinstance(img, torch.Tensor):
+            if len(img.shape) == 3:
+                img = img.unsqueeze(0)
+
+            img = img.to(self.device)
+
+        return img
+
     def forward(self, img: Union[Image, List[Image], torch.Tensor, np.ndarray], save_path=None, return_prob=False):
         """Run mtcnn face detection on a PIL image or numpy array. This method performs both
         detection and extraction of faces, returning tensors representing detected faces rather
@@ -121,25 +141,11 @@ class MTCNN(nn.Module):
         >>> face_tensor, prob = mtcnn(img, save_path='face.png', return_prob=True)
         """
 
-        if isinstance(img, Image.Image):
-            img = transforms.PILToTensor()(img).unsqueeze(0).to(self.device)
-        elif isinstance(img, list):
-            img = torch.stack([transforms.PILToTensor()(i) for i in img]).to(self.device)
-        elif isinstance(img, np.ndarray):
-            if len(img.shape) <= 2:
-                raise ValueError("Image must have 3 color channels")
-            if len(img.shape) == 3:
-                img = torch.tensor(img).permute(2, 0, 1).unsqueeze(0).to(self.device)
-            if len(img.shape) == 4:
-                img = torch.tensor(img).permute(0, 3, 1, 2).to(self.device)
-        elif isinstance(img, torch.Tensor):
-            if len(img.shape) == 3:
-                img = img.unsqueeze(0)
-
-            img = img.to(self.device)
+        img = self._convert_img(img)
 
         # Detect faces
         batch_boxes, batch_probs, batch_points = self.detect(img, landmarks=True)
+
         # Select faces
         if not self.keep_all:
             batch_boxes, batch_probs, batch_points = self.select_boxes(
@@ -196,6 +202,8 @@ class MTCNN(nn.Module):
         ...     extract_face(img, box, save_path='detected_face_{}.png'.format(i))
         >>> img_draw.save('annotated_faces.png')
         """
+
+        img = self._convert_img(img)
 
         with torch.no_grad():
             batch_boxes, batch_points = detect_face(
@@ -345,4 +353,4 @@ class MTCNN(nn.Module):
 
             faces.append(faces_im)
 
-        return torch.stack(faces)
+        return torch.stack(faces).permute(0, 3, 1, 2)

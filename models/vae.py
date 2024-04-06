@@ -7,10 +7,10 @@ from torch import Tensor
 
 
 class VariationalAutoEncoder(nn.Module):
-    def __init__(self, input_channels: int = 3, embedding_dim: int = 128, pretrained: bool = True):
+    def __init__(self, input_channels: int = 3, latent_dim: int = 128):
         super().__init__()
 
-        self.embedding_dim = embedding_dim
+        self.latent_dim = latent_dim
 
         encoder_modules = []
         hidden_dims = [32, 64, 128, 256, 512]
@@ -32,9 +32,9 @@ class VariationalAutoEncoder(nn.Module):
             input_channels = dim
 
         self.encoder = nn.Sequential(*encoder_modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1] * 4 * 4, embedding_dim)
-        self.fc_log_var = nn.Linear(hidden_dims[-1] * 4 * 4, embedding_dim)
-        self.decoder_input = nn.Linear(embedding_dim, hidden_dims[-1] * 4 * 4)
+        self.fc_mu = nn.Linear(hidden_dims[-1] * 4 * 4, self.latent_dim)
+        self.fc_log_var = nn.Linear(hidden_dims[-1] * 4 * 4, self.latent_dim)
+        self.decoder_input = nn.Linear(self.latent_dim, hidden_dims[-1] * 4 * 4)
 
         decoder_modules = []
         hidden_dims.reverse()
@@ -56,6 +56,7 @@ class VariationalAutoEncoder(nn.Module):
             )
 
         self.decoder = nn.Sequential(*decoder_modules)
+
         self.final_layer = nn.Sequential(
             nn.ConvTranspose2d(
                 in_channels=hidden_dims[-1],
@@ -72,11 +73,6 @@ class VariationalAutoEncoder(nn.Module):
             ),
             nn.Tanh(),
         )
-
-        if pretrained:
-            state_dict_path = os.path.join(os.path.dirname(__file__), '../weights/vae.pt')
-            state_dict = torch.load(state_dict_path)
-            self.load_state_dict(state_dict)
 
     def encode(self, x: torch.Tensor) -> List[torch.Tensor]:
         x = self.encoder(x)
@@ -110,8 +106,8 @@ class VariationalAutoEncoder(nn.Module):
 
     def loss(self, x, x_hat, mu, log_var, **kwargs) -> List[Tensor]:
         kld_weight = 0.00025
-        if "kld_weight" in kwargs:
-            kld_weight = kwargs["kld_weight"]
+        if "M_N" in kwargs:
+            kld_weight = kwargs["M_N"]
 
         recons_loss = nn.functional.mse_loss(x_hat, x)
 

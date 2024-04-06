@@ -9,16 +9,23 @@ from models.mtcnn import MTCNN
 EPOCHS = 10
 BATCH_SIZE = 32
 
-transform = transforms.Compose([
+transform_vae = transforms.Compose([
     transforms.Resize((256, 256)),
-    transforms.PILToTensor()
+    transforms.CenterCrop((128, 128)),
+    transforms.ToTensor()
 ])
 
-train_dataset = CelebA('./data', transform=transform, split='train', download=False)
+transform_mtcnn = transforms.Compose([
+    transforms.Resize((256, 256)),
+    transforms.PILToTensor(),
+])
+
+train_dataset = CelebA('./data', transform=transform_mtcnn, split='train', download=False)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = VariationalAutoEncoder(pretrained=False).to(device)
+model = VariationalAutoEncoder().to(device)
+
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 mtcnn = MTCNN(image_size=128, device=device)
@@ -47,4 +54,4 @@ for epoch in range(EPOCHS):
 
     print('-' * 60)
     print(f'\tEpoch {epoch + 1}/{EPOCHS}, Loss: {train_loss / len(train_loader):.4f}')
-    torch.save(model.state_dict(), f'weights/face2vec_epoch{epoch + 1}.pt')
+    torch.save(model.state_dict(), f'weights/vae_epoch{epoch + 1}.pt')
