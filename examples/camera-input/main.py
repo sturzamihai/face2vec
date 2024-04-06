@@ -17,6 +17,8 @@ while True:
     if boxes is None or len(boxes) == 0:
         continue
 
+    boxes = boxes[0]
+
     for box in boxes:
         x, y, w, h = box
         x, y, w, h = int(x), int(y), int(w), int(h)

@@ -353,4 +353,4 @@ class MTCNN(nn.Module):
 
             faces.append(faces_im)
 
-        return torch.stack(faces).permute(0, 3, 1, 2)
+        return torch.stack(faces)

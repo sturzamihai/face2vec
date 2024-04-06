@@ -7,7 +7,7 @@ All credit goes to the original authors.
 
 import torch
 from torch.nn.functional import interpolate
-from torchvision.transforms import functional as F
+from torchvision.transforms import functional as F, transforms, v2 as transforms_v2
 from torchvision.ops.boxes import batched_nms
 import numpy as np
 import os
@@ -295,7 +295,7 @@ def imresample(img, sz):
 
 def crop_resize(img, box, image_size):
     img = F.crop(img, box[1], box[0], box[3] - box[1], box[2] - box[0])
-    out = F.resize(img, [image_size, image_size]).permute(1, 2, 0)
+    out = F.resize(img, [image_size, image_size])
 
     return out
 
@@ -347,8 +347,9 @@ def extract_face(img, box, image_size=160, margin=0, save_path=None):
 
 
 def fixed_image_standardization(image_tensor):
-    processed_tensor = (image_tensor - 127.5) / 128.0
-    return processed_tensor
+    transform_float = transforms_v2.ToDtype(torch.float32, scale=True)
+
+    return transform_float(image_tensor)
 
 
 def prewhiten(x):
