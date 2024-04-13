@@ -10,7 +10,7 @@ from models.vae import VariationalAutoEncoder
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 mtcnn = MTCNN(image_size=128, device=device)
 vae = VariationalAutoEncoder().to(device)
-state_dict_path = os.path.join(os.path.dirname(__file__), '../../weights/vae_epoch3.pt')
+state_dict_path = os.path.join(os.path.dirname(__file__), '../../weights/vae_epoch15.pt')
 vae.load_state_dict(torch.load(state_dict_path, map_location=device))
 
 image_path = os.path.join(os.path.dirname(__file__), 'target.jpg')
