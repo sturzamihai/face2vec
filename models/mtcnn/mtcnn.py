@@ -1,14 +1,18 @@
 """
-Code for MTCNN model taken from
+Code for MTCNN model taken and adapted from
 [facenet-pytorch](https://github.com/timesler/facenet-pytorch/blob/master/models/mtcnn.py)
 
 All credit goes to the original authors.
 """
+from typing import Union, List
 
 import torch
+from PIL import Image
 from torch import nn
 import numpy as np
 import os
+
+from torchvision.transforms import transforms
 
 from models.mtcnn import PNet, RNet, ONet
 from models.mtcnn.utils import detect_face, extract_face, fixed_image_standardization
@@ -78,7 +82,7 @@ class MTCNN(nn.Module):
         self.rnet = RNet()
         self.onet = ONet()
 
-        self.device = torch.device('cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if device is not None:
             self.device = device
             self.to(device)
@@ -86,13 +90,33 @@ class MTCNN(nn.Module):
         if not self.selection_method:
             self.selection_method = 'largest' if self.select_largest else 'probability'
 
-    def forward(self, img, save_path=None, return_prob=False):
+    def _convert_img(self, img: Union[Image, List[Image], torch.Tensor, np.ndarray]):
+        if isinstance(img, Image.Image):
+            img = transforms.PILToTensor()(img).unsqueeze(0).to(self.device)
+        elif isinstance(img, list):
+            img = torch.stack([transforms.PILToTensor()(i) for i in img]).to(self.device)
+        elif isinstance(img, np.ndarray):
+            if len(img.shape) <= 2:
+                raise ValueError("Image must have 3 color channels")
+            elif len(img.shape) == 3:
+                img = torch.tensor(img).permute(2, 0, 1).unsqueeze(0).to(self.device)
+            elif len(img.shape) == 4:
+                img = torch.tensor(img).permute(0, 3, 1, 2).to(self.device)
+        elif isinstance(img, torch.Tensor):
+            if len(img.shape) == 3:
+                img = img.unsqueeze(0)
+
+            img = img.to(self.device)
+
+        return img
+
+    def forward(self, img: Union[Image, List[Image], torch.Tensor, np.ndarray], save_path=None, return_prob=False):
         """Run mtcnn face detection on a PIL image or numpy array. This method performs both
         detection and extraction of faces, returning tensors representing detected faces rather
         than the bounding boxes. To access bounding boxes, see the mtcnn.detect() method below.
         
         Arguments:
-            img {PIL.Image, np.ndarray, or list} -- A PIL image, np.ndarray, torch.Tensor, or list.
+            img {PIL.Image, np.ndarray, or list} -- A PIL image, np.ndarray, torch.Tensor.
         
         Keyword Arguments:
             save_path {str} -- An optional save path for the cropped image. Note that when
@@ -100,7 +124,7 @@ class MTCNN(nn.Module):
                 face image is not, so it is a true representation of the face in the input image.
                 If `img` is a list of images, `save_path` should be a list of equal length.
                 (default: {None})
-            return_prob {bool} -- Whether or not to return the detection probability.
+            return_prob {bool} -- Whether to return the detection probability.
                 (default: {False})
         
         Returns:
@@ -117,8 +141,11 @@ class MTCNN(nn.Module):
         >>> face_tensor, prob = mtcnn(img, save_path='face.png', return_prob=True)
         """
 
+        img = self._convert_img(img)
+
         # Detect faces
         batch_boxes, batch_probs, batch_points = self.detect(img, landmarks=True)
+
         # Select faces
         if not self.keep_all:
             batch_boxes, batch_probs, batch_points = self.select_boxes(
@@ -126,6 +153,10 @@ class MTCNN(nn.Module):
             )
         # Extract faces
         faces = self.extract(img, batch_boxes, save_path)
+
+        if img.shape[0] == 1:
+            faces = faces[0]
+            batch_probs = batch_probs[0]
 
         if return_prob:
             return faces, batch_probs
@@ -172,6 +203,8 @@ class MTCNN(nn.Module):
         >>> img_draw.save('annotated_faces.png')
         """
 
+        img = self._convert_img(img)
+
         with torch.no_grad():
             batch_boxes, batch_points = detect_face(
                 img, self.min_face_size,
@@ -202,15 +235,6 @@ class MTCNN(nn.Module):
         boxes = np.array(boxes, dtype=object)
         probs = np.array(probs, dtype=object)
         points = np.array(points, dtype=object)
-
-        if (
-                not isinstance(img, (list, tuple)) and
-                not (isinstance(img, np.ndarray) and len(img.shape) == 4) and
-                not (isinstance(img, torch.Tensor) and len(img.shape) == 4)
-        ):
-            boxes = boxes[0]
-            probs = probs[0]
-            points = points[0]
 
         if landmarks:
             return boxes, probs, points
@@ -247,33 +271,17 @@ class MTCNN(nn.Module):
                 tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray) -- nx4 ndarray of bounding boxes
                     for n images. Ix0 array of probabilities for each box, array of landmark points.
         """
-
-        # copying batch detection from extract, but would be easier to ensure detect creates consistent output.
-        batch_mode = True
-        if (
-                not isinstance(imgs, (list, tuple)) and
-                not (isinstance(imgs, np.ndarray) and len(imgs.shape) == 4) and
-                not (isinstance(imgs, torch.Tensor) and len(imgs.shape) == 4)
-        ):
-            imgs = [imgs]
-            all_boxes = [all_boxes]
-            all_probs = [all_probs]
-            all_points = [all_points]
-            batch_mode = False
-
         selected_boxes, selected_probs, selected_points = [], [], []
         for boxes, points, probs, img in zip(all_boxes, all_points, all_probs, imgs):
 
             if boxes is None:
-                selected_boxes.append(None)
-                selected_probs.append([None])
-                selected_points.append(None)
                 continue
 
             # If at least 1 box found
             boxes = np.array(boxes)
             probs = np.array(probs)
             points = np.array(points)
+            box_order = None
 
             if method == 'largest':
                 box_order = np.argsort((boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1]))[::-1]
@@ -296,6 +304,9 @@ class MTCNN(nn.Module):
                     selected_points.append(None)
                     continue
 
+            if box_order is None:
+                raise Exception("Invalid selection method: {}".format(method))
+
             box = boxes[box_order][[0]]
             prob = probs[box_order][[0]]
             point = points[box_order][[0]]
@@ -303,29 +314,9 @@ class MTCNN(nn.Module):
             selected_probs.append(prob)
             selected_points.append(point)
 
-        if batch_mode:
-            selected_boxes = np.array(selected_boxes)
-            selected_probs = np.array(selected_probs)
-            selected_points = np.array(selected_points)
-        else:
-            selected_boxes = selected_boxes[0]
-            selected_probs = selected_probs[0][0]
-            selected_points = selected_points[0]
-
-        return selected_boxes, selected_probs, selected_points
+        return np.array(selected_boxes), np.array(selected_probs), np.array(selected_points)
 
     def extract(self, img, batch_boxes, save_path):
-        # Determine if a batch or single image was passed
-        batch_mode = True
-        if (
-                not isinstance(img, (list, tuple)) and
-                not (isinstance(img, np.ndarray) and len(img.shape) == 4) and
-                not (isinstance(img, torch.Tensor) and len(img.shape) == 4)
-        ):
-            img = [img]
-            batch_boxes = [batch_boxes]
-            batch_mode = False
-
         # Parse save path(s)
         if save_path is not None:
             if isinstance(save_path, str):
@@ -362,7 +353,4 @@ class MTCNN(nn.Module):
 
             faces.append(faces_im)
 
-        if not batch_mode:
-            faces = faces[0]
-
-        return faces
+        return torch.stack(faces)

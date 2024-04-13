@@ -1,8 +1,14 @@
+"""
+Code for MTCNN model taken and adapted from
+[facenet-pytorch](https://github.com/timesler/facenet-pytorch/blob/master/models/mtcnn.py)
+
+All credit goes to the original authors.
+"""
+
 import torch
 from torch.nn.functional import interpolate
-from torchvision.transforms import functional as F
+from torchvision.transforms import functional as F, transforms, v2 as transforms_v2
 from torchvision.ops.boxes import batched_nms
-from PIL import Image
 import numpy as np
 import os
 
@@ -24,25 +30,8 @@ def fixed_batch_process(im_data, model):
 
 
 def detect_face(imgs, minsize, pnet, rnet, onet, threshold, factor, device):
-    if isinstance(imgs, (np.ndarray, torch.Tensor)):
-        if isinstance(imgs, np.ndarray):
-            imgs = torch.as_tensor(imgs.copy(), device=device)
-
-        if isinstance(imgs, torch.Tensor):
-            imgs = torch.as_tensor(imgs, device=device)
-
-        if len(imgs.shape) == 3:
-            imgs = imgs.unsqueeze(0)
-    else:
-        if not isinstance(imgs, (list, tuple)):
-            imgs = [imgs]
-        if any(img.size != imgs[0].size for img in imgs):
-            raise Exception("mtcnn batch processing only compatible with equal-dimension images.")
-        imgs = np.stack([np.uint8(img) for img in imgs])
-        imgs = torch.as_tensor(imgs.copy(), device=device)
-
     model_dtype = next(pnet.parameters()).dtype
-    imgs = imgs.permute(0, 3, 1, 2).type(model_dtype)
+    imgs = imgs.type(model_dtype)
 
     batch_size = len(imgs)
     h, w = imgs.shape[2:4]
@@ -212,6 +201,7 @@ def generateBoundingBox(reg, probs, scale, thresh):
     q1 = ((stride * bb + 1) / scale).floor()
     q2 = ((stride * bb + cellsize - 1 + 1) / scale).floor()
     boundingbox = torch.cat([q1, q2, score.unsqueeze(1), reg], dim=1)
+
     return boundingbox, image_inds
 
 
@@ -304,36 +294,19 @@ def imresample(img, sz):
 
 
 def crop_resize(img, box, image_size):
-    if isinstance(img, np.ndarray):
-        img = img[box[1]:box[3], box[0]:box[2]]
-        out = cv2.resize(
-            img,
-            (image_size, image_size),
-            interpolation=cv2.INTER_AREA
-        ).copy()
-    elif isinstance(img, torch.Tensor):
-        img = img[box[1]:box[3], box[0]:box[2]]
-        out = imresample(
-            img.permute(2, 0, 1).unsqueeze(0).float(),
-            (image_size, image_size)
-        ).byte().squeeze(0).permute(1, 2, 0)
-    else:
-        out = img.crop(box).copy().resize((image_size, image_size), Image.BILINEAR)
+    img = F.crop(img, box[1], box[0], box[3] - box[1], box[2] - box[0])
+    out = F.resize(img, [image_size, image_size])
+
     return out
 
 
 def save_img(img, path):
-    if isinstance(img, np.ndarray):
-        cv2.imwrite(path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-    else:
-        img.save(path)
+    img = img if isinstance(img, np.ndarray) else img.numpy()
+    cv2.imwrite(path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
 
 def get_size(img):
-    if isinstance(img, (np.ndarray, torch.Tensor)):
-        return img.shape[1::-1]
-    else:
-        return img.size
+    return img.shape[1:]
 
 
 def extract_face(img, box, image_size=160, margin=0, save_path=None):
@@ -350,7 +323,7 @@ def extract_face(img, box, image_size=160, margin=0, save_path=None):
         save_path {str} -- Save path for extracted face image. (default: {None})
     
     Returns:
-        torch.tensor -- tensor representing the extracted face.
+        torch.Tensor -- tensor representing the extracted face.
     """
     margin = [
         margin * (box[2] - box[0]) / (image_size - margin),
@@ -370,14 +343,13 @@ def extract_face(img, box, image_size=160, margin=0, save_path=None):
         os.makedirs(os.path.dirname(save_path) + "/", exist_ok=True)
         save_img(face, save_path)
 
-    face = F.to_tensor(np.float32(face))
-
     return face
 
 
 def fixed_image_standardization(image_tensor):
-    processed_tensor = (image_tensor - 127.5) / 128.0
-    return processed_tensor
+    transform_float = transforms_v2.ToDtype(torch.float32, scale=True)
+
+    return transform_float(image_tensor)
 
 
 def prewhiten(x):

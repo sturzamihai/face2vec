@@ -1,5 +1,5 @@
 """
-Code for mtcnn model taken from
+Code for MTCNN model taken and adapted from
 [facenet-pytorch](https://github.com/timesler/facenet-pytorch/blob/master/models/mtcnn.py)
 
 All credit goes to the original authors.
@@ -14,7 +14,7 @@ class ONet(nn.Module):
     """mtcnn ONet.
     
     Keyword Arguments:
-        pretrained {bool} -- Whether or not to load saved pretrained weights (default: {True})
+        pretrained {bool} -- Whether to load saved pretrained weights (default: {True})
     """
 
     def __init__(self, pretrained=True):

@@ -1,4 +1,6 @@
 import cv2
+import torch
+
 from models.mtcnn import MTCNN
 
 video_input = cv2.VideoCapture(0)
@@ -12,8 +14,10 @@ while True:
 
     boxes, _ = model.detect(frame)
 
-    if boxes is None:
+    if boxes is None or len(boxes) == 0:
         continue
+
+    boxes = boxes[0]
 
     for box in boxes:
         x, y, w, h = box
