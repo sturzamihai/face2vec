@@ -9,6 +9,8 @@ import torch
 from torch import nn
 import os
 
+from face2vec.utils import get_model_weights
+
 
 class ONet(nn.Module):
     """mtcnn ONet.
@@ -39,9 +41,8 @@ class ONet(nn.Module):
         self.dense6_3 = nn.Linear(256, 10)
 
         if pretrained:
-            state_dict_path = os.path.join(os.path.dirname(__file__), '../../weights/onet.pt')
-            state_dict = torch.load(state_dict_path)
-            self.load_state_dict(state_dict)
+            state_dict_path = get_model_weights('onet')
+            self.load_state_dict(torch.load(state_dict_path))
 
     def forward(self, x):
         x = self.conv1(x)

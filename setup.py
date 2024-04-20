@@ -1,11 +1,21 @@
 from setuptools import setup, find_packages
 
+
+def readme():
+    with open('README.md') as f:
+        return f.read()
+
+
 setup(
     name='face2vec',
-    version='0.0.1-alpha',
+    packages=['face2vec'],
+    version='0.0.3-alpha',
     license='MIT',
     author='Mihai-George Sturza',
     author_email='contact@mihaisturza.ro',
-    description='A Python package for transforming faces into feature vectors.',
+    description='A Python library for transforming faces into feature vectors.',
+    long_description=readme(),
+    long_description_content_type='text/markdown',
     url='https://github.com/sturzamihai/face2vec',
+    download_url='https://github.com/sturzamihai/face2vec'
 )

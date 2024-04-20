@@ -9,6 +9,8 @@ import torch
 from torch import nn
 import os
 
+from face2vec.utils import get_model_weights
+
 
 class PNet(nn.Module):
     """mtcnn PNet.
@@ -32,9 +34,8 @@ class PNet(nn.Module):
         self.conv4_2 = nn.Conv2d(32, 4, kernel_size=1)
 
         if pretrained:
-            state_dict_path = os.path.join(os.path.dirname(__file__), '../../weights/pnet.pt')
-            state_dict = torch.load(state_dict_path)
-            self.load_state_dict(state_dict)
+            state_dict_path = get_model_weights('pnet')
+            self.load_state_dict(torch.load(state_dict_path))
 
     def forward(self, x):
         x = self.conv1(x)

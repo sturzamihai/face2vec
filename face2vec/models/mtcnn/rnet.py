@@ -9,6 +9,8 @@ import torch
 from torch import nn
 import os
 
+from face2vec.utils import get_model_weights
+
 
 class RNet(nn.Module):
     """mtcnn RNet.
@@ -37,9 +39,8 @@ class RNet(nn.Module):
         self.training = False
 
         if pretrained:
-            state_dict_path = os.path.join(os.path.dirname(__file__), '../../weights/rnet.pt')
-            state_dict = torch.load(state_dict_path)
-            self.load_state_dict(state_dict)
+            state_dict_path = get_model_weights('rnet')
+            self.load_state_dict(torch.load(state_dict_path))
 
     def forward(self, x):
         x = self.conv1(x)

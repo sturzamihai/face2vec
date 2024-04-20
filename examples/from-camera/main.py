@@ -1,7 +1,6 @@
 import cv2
-import torch
 
-from models.mtcnn import MTCNN
+from face2vec.models.mtcnn import MTCNN
 
 video_input = cv2.VideoCapture(0)
 model = MTCNN()
@@ -13,6 +12,7 @@ while True:
         break
 
     boxes, _ = model.detect(frame)
+    faces = model(frame)
 
     if boxes is None or len(boxes) == 0:
         continue
