@@ -14,8 +14,8 @@ import os
 
 from torchvision.transforms import transforms
 
-from models.mtcnn import PNet, RNet, ONet
-from models.mtcnn.utils import detect_face, extract_face, fixed_image_standardization
+from face2vec.models.mtcnn import PNet, RNet, ONet
+from face2vec.models.mtcnn.utils import detect_face, extract_face, fixed_image_standardization
 
 
 class MTCNN(nn.Module):
@@ -82,10 +82,8 @@ class MTCNN(nn.Module):
         self.rnet = RNet()
         self.onet = ONet()
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        if device is not None:
-            self.device = device
-            self.to(device)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') if device is None else device
+        self.to(device)
 
         if not self.selection_method:
             self.selection_method = 'largest' if self.select_largest else 'probability'
@@ -136,7 +134,7 @@ class MTCNN(nn.Module):
                 dimension (batch) as the first dimension.
 
         Example:
-        >>> from models.mtcnn import mtcnn
+        >>> from face2vec.models.mtcnn import mtcnn
         >>> mtcnn = mtcnn()
         >>> face_tensor, prob = mtcnn(img, save_path='face.png', return_prob=True)
         """
@@ -188,8 +186,7 @@ class MTCNN(nn.Module):
                 are returned if `landmarks=True`.
 
         Example:
-        >>> from PIL import Image, ImageDraw
-        >>> from models.mtcnn import mtcnn
+        >>> from face2vec.models.mtcnn import mtcnn        >>> from PIL import Image, ImageDraw
         >>> mtcnn = mtcnn(keep_all=True)
         >>> boxes, probs, points = mtcnn.detect(img, landmarks=True)
         >>> # Draw boxes and save faces

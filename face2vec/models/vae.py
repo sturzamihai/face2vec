@@ -1,13 +1,15 @@
 from typing import List, Dict, Any
 
 import torch
-import os
 import torch.nn as nn
 from torch import Tensor
 
+from face2vec.utils import get_model_weights
+
 
 class VariationalAutoEncoder(nn.Module):
-    def __init__(self, input_channels: int = 3, latent_dim: int = 128):
+    def __init__(self, input_channels: int = 3, latent_dim: int = 128, pretrained: bool = True,
+                 device: torch.device = None):
         super().__init__()
 
         self.latent_dim = latent_dim
@@ -73,6 +75,13 @@ class VariationalAutoEncoder(nn.Module):
             ),
             nn.Tanh(),
         )
+
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') if device is None else device
+        self.to(device)
+
+        if pretrained:
+            state_dict_path = get_model_weights('vae')
+            self.load_state_dict(torch.load(state_dict_path, map_location=self.device))
 
     def encode(self, x: torch.Tensor) -> List[torch.Tensor]:
         x = self.encoder(x)

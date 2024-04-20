@@ -4,7 +4,7 @@ from torchvision.datasets import CelebA
 from torch.utils.data import DataLoader
 
 from models.vae import VariationalAutoEncoder
-from models.mtcnn import MTCNN
+from face2vec.models.mtcnn import MTCNN
 
 EPOCHS = 10
 BATCH_SIZE = 32
