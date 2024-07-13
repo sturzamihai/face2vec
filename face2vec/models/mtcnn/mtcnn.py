@@ -88,7 +88,7 @@ class MTCNN(nn.Module):
         if not self.selection_method:
             self.selection_method = 'largest' if self.select_largest else 'probability'
 
-    def _convert_img(self, img: Union[Image, List[Image], torch.Tensor, np.ndarray]):
+    def _convert_img(self, img: Union[Image.Image, List[Image.Image], torch.Tensor, np.ndarray]):
         if isinstance(img, Image.Image):
             img = transforms.PILToTensor()(img).unsqueeze(0).to(self.device)
         elif isinstance(img, list):
@@ -108,7 +108,7 @@ class MTCNN(nn.Module):
 
         return img
 
-    def forward(self, img: Union[Image, List[Image], torch.Tensor, np.ndarray], save_path=None, return_prob=False):
+    def forward(self, img: Union[Image.Image, List[Image.Image], torch.Tensor, np.ndarray], save_path=None, return_prob=False):
         """Run mtcnn face detection on a PIL image or numpy array. This method performs both
         detection and extraction of faces, returning tensors representing detected faces rather
         than the bounding boxes. To access bounding boxes, see the mtcnn.detect() method below.

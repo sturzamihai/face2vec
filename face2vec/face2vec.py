@@ -19,12 +19,12 @@ class Face2Vec(nn.Module):
         self.mtcnn = MTCNN(image_size=128, device=self.device)
         self.vae = VariationalAutoEncoder(device=self.device)
 
-    def forward(self, image: Union[torch.Tensor, Image, np.ndarray]) -> torch.Tensor:
+    def forward(self, image: Union[torch.Tensor, Image.Image, np.ndarray]) -> torch.Tensor:
         faces = self.mtcnn(image).unsqueeze(0).to(self.device)
         mu, log_var = self.vae.encode(faces)
         return self.vae.reparametrize(mu, log_var)
 
-    def reconstruct(self, image: Union[torch.Tensor, Image, np.ndarray]) -> torch.Tensor:
+    def reconstruct(self, image: Union[torch.Tensor, Image.Image, np.ndarray]) -> torch.Tensor:
         faces = self.mtcnn(image).unsqueeze(0).to(self.device)
         x, x_hat, mu, log_var = self.vae(faces)
 
