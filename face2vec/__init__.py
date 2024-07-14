@@ -1,1 +1,1 @@
-from .face2vec import *
+from face2vec.face2vec import Face2Vec

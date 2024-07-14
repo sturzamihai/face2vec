@@ -5,6 +5,9 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
+def requirements():
+    with open('requirements.txt') as f:
+        return f.read().splitlines()
 
 setup(
     name='face2vec',
@@ -17,5 +20,6 @@ setup(
     long_description=readme(),
     long_description_content_type='text/markdown',
     url='https://github.com/sturzamihai/face2vec',
-    download_url='https://github.com/sturzamihai/face2vec'
+    download_url='https://github.com/sturzamihai/face2vec',
+    install_requires=requirements(),
 )
