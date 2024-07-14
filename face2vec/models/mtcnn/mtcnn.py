@@ -152,6 +152,9 @@ class MTCNN(nn.Module):
         # Extract faces
         faces = self.extract(img, batch_boxes, save_path)
 
+        if faces is None:
+            return None
+
         if img.shape[0] == 1:
             faces = faces[0]
             batch_probs = batch_probs[0]
@@ -349,5 +352,8 @@ class MTCNN(nn.Module):
                 faces_im = faces_im[0]
 
             faces.append(faces_im)
+
+        if len(faces) == 0:
+            return None
 
         return torch.stack(faces)

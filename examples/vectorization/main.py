@@ -2,7 +2,7 @@ import os
 
 from PIL import Image
 
-from face2vec import Face2Vec
+from face2vec.face2vec import Face2Vec
 
 face2vec = Face2Vec()
 
