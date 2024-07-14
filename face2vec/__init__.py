@@ -1,1 +1,0 @@
-from face2vec.face2vec import Face2Vec
