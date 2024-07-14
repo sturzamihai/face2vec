@@ -11,7 +11,7 @@ def requirements():
 
 setup(
     name='face2vec',
-    packages=['face2vec'],
+    packages=find_packages(),
     version='0.0.3-alpha',
     license='MIT',
     author='Mihai-George Sturza',
